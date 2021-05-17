@@ -1,5 +1,6 @@
 package eu.h2020.helios_social.extension.socialcommunitydetection;
 
+import java.io.FileDescriptor;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -9,13 +10,15 @@ import java.util.Map;
 import eu.h2020.helios_social.core.contextualegonetwork.Context;
 import eu.h2020.helios_social.core.contextualegonetwork.ContextualEgoNetwork;
 import eu.h2020.helios_social.core.contextualegonetwork.Node;
+import eu.h2020.helios_social.core.messaging_nodejslibp2p.HeliosMessagingReceiver;
+import eu.h2020.helios_social.core.messaging_nodejslibp2p.HeliosNetworkAddress;
 
-public class SocialCommunitySetupper extends Thread{
+class SocialCommunitySetupper extends Thread{
 
     /**
      * A reference to the module
      */
-    SocialCommunityDetection module=null;
+    SocialCommunityDetection module;
 
 
     /**
@@ -37,7 +40,10 @@ public class SocialCommunitySetupper extends Thread{
         for(Context context : module.contextualEgoNetwork.getContexts()) {
             module.communities.put(context, new LinkedList<>());
         }
+
 //        TODO: set up messaging callbacks
+        HeliosMessagingReceiver receiver=new SocialCommunityMessageReceiver();
+        module.messagingModule.addReceiver(SocialCommunityDetection.PROTOCOL_NAME, receiver);
 
 //      create the cen listener and attach it to the cen if necessary, then activate it
         if(module.cenListener==null){

@@ -5,4 +5,4 @@ import eu.h2020.helios_social.core.contextualegonetwork.ContextualEgoNetworkList
 /**
  * This class is used to make the CEN listener idle
  */
-public class IdleCENListener implements ContextualEgoNetworkListener {}
+class IdleCENListener implements ContextualEgoNetworkListener {}

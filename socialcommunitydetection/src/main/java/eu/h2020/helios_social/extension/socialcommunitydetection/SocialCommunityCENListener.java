@@ -6,7 +6,7 @@ import eu.h2020.helios_social.core.contextualegonetwork.Edge;
 import eu.h2020.helios_social.core.contextualegonetwork.Interaction;
 import eu.h2020.helios_social.core.contextualegonetwork.Node;
 
-public class SocialCommunityCENListener implements ContextualEgoNetworkListener {
+class SocialCommunityCENListener implements ContextualEgoNetworkListener {
 
     private final ContextualEgoNetworkListener activeCENListener=new ActiveCENListener();
     private final ContextualEgoNetworkListener idleCENListener=new IdleCENListener();
