@@ -34,14 +34,13 @@ class SocialCommunitySetupper extends Thread{
     @Override
     public void run() {
 
-//        TODO: set up (other) data structures
 //      set up data structures
         module.communities=new HashMap<>();
         for(Context context : module.contextualEgoNetwork.getContexts()) {
             module.communities.put(context, new LinkedList<>());
         }
 
-//        TODO: set up messaging callbacks
+//      set up messaging callbacks
         HeliosMessagingReceiver receiver=new SocialCommunityMessageReceiver();
         module.messagingModule.addReceiver(SocialCommunityDetection.PROTOCOL_NAME, receiver);
 
@@ -53,7 +52,14 @@ class SocialCommunitySetupper extends Thread{
         module.cenListener.setActiveCENListener();
 
 
-//        TODO: send messages
+//      send ping messages
+        byte[] pingMessage=InternalMessage.createMessage(InternalMessage.Type.PING, module.contextualEgoNetwork.getEgo().getId());
+        for(Node alter:module.contextualEgoNetwork.getAlters()) {
+            HeliosNetworkAddress address = new HeliosNetworkAddress();
+            address.setNetworkId(alter.getId());
+            module.messagingModule.sendTo(address, SocialCommunityDetection.PROTOCOL_NAME, pingMessage);
+        }
+
 
     }
 
