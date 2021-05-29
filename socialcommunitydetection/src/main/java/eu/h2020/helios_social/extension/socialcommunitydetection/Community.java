@@ -2,11 +2,15 @@ package eu.h2020.helios_social.extension.socialcommunitydetection;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 import eu.h2020.helios_social.core.contextualegonetwork.Context;
 import eu.h2020.helios_social.core.contextualegonetwork.ContextualEgoNetwork;
+import eu.h2020.helios_social.core.contextualegonetwork.Edge;
 import eu.h2020.helios_social.core.contextualegonetwork.Node;
 
 public class Community {
@@ -17,14 +21,33 @@ public class Community {
     private final Context context;
     //	nodes inside the community
     private Set<Node> communityCore;
+//    shards created from an alter leave
+    private List<Set<Node>> shards;
 
     // threshold for a node to join the community (used only in the cut strats). La soglia deve essere SUPERATA (>, senza uguale) per essere dentro!
     private static final int THRESHOLD=2;
 
+    /**
+     * Default constructor
+     * @param contextualEgoNetwork a reference to the contextual ego network
+     * @param c the context on which this community is defined
+     */
     Community(ContextualEgoNetwork contextualEgoNetwork, Context c){
         cen=contextualEgoNetwork;
         context=c;
         communityCore=new HashSet<>();
+    }
+
+    /**
+     * Constructor to use in case of a community split
+     * @param contextualEgoNetwork a reference to the contextual ego network
+     * @param c the context on which this community is defined
+     * @param initialCore the initial community structure
+     */
+    Community(ContextualEgoNetwork contextualEgoNetwork, Context c, Set<Node> initialCore){
+        cen=contextualEgoNetwork;
+        context=c;
+        communityCore=initialCore;
     }
 
     public int getCommunityId(){
@@ -92,39 +115,38 @@ public class Community {
     }
 
     /**
-     * alternatives:
-     * 1) insistere sui triangoli
-     * 2) componente connessa = comunità
-     * 3) nodi con almeno 2 vicini dentro la comunità
-     *
-     * allò. siccome devo rivisitare comunque tutta la comunità, rivaluto il core scoprendo i triangoli adiacenti
+     * Internal routine for the management of an alter leave
+     * @param alterNode the {@link Node} object to be removed from the community
+     * @return true if the community must be destroyed, false otherwise
      */
+    boolean alterLeave(Node alterNode){
 
-    public boolean alterLeave(String alterSocialId){
-
-        boolean destroy=false;
-        //	check that there is still a structure
-//			potrebbe valer la pena lasciare leggera questa funzione ed eseguire una "pulizia" alla fine di ogni timeslot?
-//			qualcosa tipo: elimino il nodo e se mi pare che qualche suo vicino non faccia più parte della comunità, lo segnalo
-//			così che possa cercarsi una nuova comunità. al timeslot successivo lo elimino davvero
-        //if the alter is not part of this ego network, do nothing and return
-        if(!graph.get(egoSocialId).contains(alterSocialId)) return false;
-        // return if the core did not contain the alter
-        if(!communityCore.remove(alterSocialId)) return false;
-        communityMembersLoadingFactors.remove(alterSocialId);
-        // delete this community without further action if it is too small
+//        check that there is still a structure
+//        if the alter is not part of this ego network, do nothing and return
+        if(!context.getNodes().contains(alterNode)) return false;
+//        return if the core did not contain the alter
+        if(!communityCore.remove(alterNode)) return false;
+//        delete this community without further action if it is too small
         if(communityCore.size()<3){
-            CommunitiesObserver.deaths++;
             return true;
         }
 
 
-//		NEW NEW STRATS: segna chi sono i vicini e per ognuno prova a toglierlo e rimetterlo
-        Set<String> neighbours = new HashSet<String> (graph.get(alterSocialId));
+//		  local strategy: remove and readd each neighbour of the leaving node
+        Set<Node> neighbours = new HashSet<> ();
+        Iterator<Edge> inedges=context.getInEdges(alterNode).iterator();
+        while(inedges.hasNext()){
+            neighbours.add(inedges.next().getSrc());
+        }
+        Iterator<Edge> outedges=context.getOutEdges(alterNode).iterator();
+        while(outedges.hasNext()){
+            neighbours.add(outedges.next().getDst());
+        }
+
         //	remove the ones outside the community
-        Iterator<String> iterator=neighbours.iterator();
+        Iterator<Node> iterator=neighbours.iterator();
         while(iterator.hasNext()) {
-            String neighbour=iterator.next();
+            Node neighbour=iterator.next();
             if(!communityCore.contains(neighbour)) {
                 iterator.remove();
             }
@@ -134,9 +156,9 @@ public class Community {
         while(changed) {
             changed=false;
             iterator=neighbours.iterator();
-//			for each neigh
+//			for each neighbour (inside the community, but unchecked)
             while(iterator.hasNext()) {
-                String neighbour=iterator.next();
+                Node neighbour=iterator.next();
 //				check if the join conditions still hold
                 if(checkJoinConditions(neighbour)) {
 //					if this works, it is still part of the community
@@ -146,123 +168,79 @@ public class Community {
             }
         }
 //		definitely expel nodes still outside the community
-        iterator=neighbours.iterator();
-        while(iterator.hasNext()) {
-            String neighbour=iterator.next();
-            if(neighbour.compareTo(moderator)==0) continue;
-            TilesMessage unmembership=new TilesMessage(Type.END_COM, moderator);
-            GenericTilesBody body=unmembership.new GenericTilesBody(egoSocialId, getCommunityId(), null);
-            unmembership.body=body;
-            unmembership.recipient=neighbour;
-            DisTilesProtocol.sendTilesMessage(unmembership);
+        for(Node neighbour:neighbours) {
             communityCore.remove(neighbour);
         }
 
         //	the resulting connected components are the resulting communities
-        List<Set<String>> components=new LinkedList<>();
+        List<Set<Node>> components=new LinkedList<>();
         while(!communityCore.isEmpty()) {
             //	find a component and add it to the list of components
             //	init
-            String seed=communityCore.iterator().next();
-            components.add(connectedComponent(seed));//, new HashSet<>(), new LinkedList<>(), new HashSet<>()));
+            Node seed=communityCore.iterator().next();
+            components.add(connectedComponent(seed));
         }
-
-        //count splits and deaths
-        if(components.size()==0) CommunitiesObserver.deaths++;
-        else if(components.size()>1) CommunitiesObserver.splits++;
-        else if(components.size()==1) CommunitiesObserver.survives++;
 
 //		destroy small communities right away
-        Iterator<Set<String>> setiterator=components.iterator();
+        Iterator<Set<Node>> setiterator=components.iterator();
         while(setiterator.hasNext()) {
-            Set<String> shard=setiterator.next();
-            if(shard.size()>2) continue;
-            for(String member : shard) {
-                //send unmemberships
-                if(member.compareTo(moderator)==0) continue;
-                TilesMessage unmembership=new TilesMessage(Type.END_COM, moderator);
-                GenericTilesBody body=unmembership.new GenericTilesBody(egoSocialId, getCommunityId(), null);
-                unmembership.body=body;
-                unmembership.recipient=member;
-                DisTilesProtocol.sendTilesMessage(unmembership);
-            }
-            setiterator.remove();
+            Set<Node> shard=setiterator.next();
+            if(shard.size()<3) setiterator.remove();
         }
 
-        //	if there is just one component and it contains the old moderator, everything is fine
-        if(components.size()==1 && components.get(0).contains(moderator)) {
+//        if there are no resulting components, destroy the community
+        if (components.size()==0) return true;
+        else if (components.size()==1) {
+//            if there is only one shard, assign it to this object
             communityCore=components.get(0);
-            if(!communityCore.contains(secondaryModerator))	{
-                updateSecondaryModerator();
-            }
-            loadfactorCleanup();
-            return false;
         }
-
-        //	find a community with this moderator
-        destroy=true;
-        setiterator=components.iterator();
-        while(iterator.hasNext()) {
-            Set<String> shard=setiterator.next();
-            if(shard.size()<3) continue;
-            if(shard.contains(egoSocialId)) {
-                setiterator.remove();
-                communityCore=shard;
-
-                if(!communityCore.contains(secondaryModerator)) {
-                    updateSecondaryModerator();
-                }
-
-                destroy=false;
-                break;
-            }
+        else {
+//            otherwise assign the first shard here
+            communityCore=components.remove(0);
+            shards=components;
         }
-        //	send unmembership to all other nodes
-        setiterator=components.iterator();
-        while(setiterator.hasNext()) {
-            Set<String> shard=setiterator.next();
-            for(String member : shard) {
-                //send unmemberships
-                TilesMessage unmembership=new TilesMessage(Type.END_COM, moderator);
-                GenericTilesBody body=unmembership.new GenericTilesBody(egoSocialId, getCommunityId(), null);
-                unmembership.body=body;
-                unmembership.recipient=member;
-                DisTilesProtocol.sendTilesMessage(unmembership);
-            }
-            //	don't forget to eject the community, but only if they have reasonable size!
-            if(shard.size()<3) continue;
-            //elect a moderator
-            //String elected=shard.iterator().next(); //ELEZIONE MODERATORE
-            String elected = selectPrimaryModerator(shard);
-            //create the message
-            Tiles t = new Tiles(elected, egoSocialId, shard, prevCore, previousId);
-            t.communityMembersLoadingFactors=new HashMap<String, Double>(this.communityMembersLoadingFactors);
-            TilesMessage kapew=new TilesMessage(Type.GNT_PRI_MOD, moderator, elected);
-            GenericTilesBody body=kapew.new GenericTilesBody(egoSocialId, getCommunityId(), t);
-            kapew.body=body;
-            //FIRE ZA KAPEW
-            DisTilesProtocol.sendTilesMessage(kapew);
-        }
-
-        loadfactorCleanup();
-        return destroy;
-
+        return false;
     }
 
-    private Set<String> connectedComponent(String seed){
+    /**
+     * check if there are shards resulted from a leave to be managed somehow
+     * @return true if there are shards to be managed, false otherwise
+     */
+    boolean wasSplit(){
+        return shards!=null;
+    }
+
+    /**
+     * get an iterator of the shards that have to be managed
+     * @return the iterator
+     */
+    Iterator<Set<Node>> getShards(){
+        return shards.iterator();
+    }
+
+    /**
+     * simple algorithm for cpnnected components
+     * @param seed the seed node from which the search must start
+     * @return a set of nodes that can be reached from the seed node
+     */
+    private Set<Node> connectedComponent(Node seed){
 //		setup
-        Set<String> visited=new HashSet<String>();
-        Queue<String> queue=new LinkedList<String>();
+        Set<Node> visited=new HashSet<>();
+        Queue<Node> queue=new LinkedList<>();
         queue.add(seed);
         visited.add(seed);
         communityCore.remove(seed);
 
 //		iterative visit
         while(!queue.isEmpty()) {
-            String node=queue.poll();
+            Node node=queue.poll();
+            if(node==null) continue;
 //			"node" was already reached, i need to check only the neighbours
-            Set<String> neighbours=graph.get(node);
-            for(String neighbour : neighbours) {
+            Set<Node> neighbours=new HashSet<>();
+            context.getInEdges(node).forEach(edge -> neighbours.add(edge.getSrc()));
+            context.getOutEdges(node).forEach(edge -> neighbours.add(edge.getDst()));
+
+            for(Node neighbour : neighbours) {
 //				if the neighbour is in the core but not in the set of visited
                 if(communityCore.contains(neighbour) && !visited.contains(neighbour)) {
                     visited.add(neighbour);
@@ -275,31 +253,7 @@ public class Community {
         return visited;
     }
 
-    @SuppressWarnings("unused")
-    private Set<String> connectedComponent(String seed, Set<String> component, Queue<String> queue, Set<String> visited) {
-
-        //	if this node belongs to the community core, schedule a visit of its neighbours
-        if(communityCore.contains(seed)) {
-            component.add(seed);
-            communityCore.remove(seed);
-            //	but only if they have still to be visited
-            graph.get(seed).forEach(new Consumer<String>() {
-                @Override
-                public void accept(String t) {
-                    if(!visited.contains(t)) {
-                        queue.add(t);
-                        visited.add(t);
-                    }
-                }
-            });
-        }
-        // at the end return the component
-        if(queue.isEmpty()) return component;
-        // or the recursive call to visit the next node
-        return connectedComponent(queue.poll(), component, queue, visited);
-    }
-
-
+    /*
     private boolean closeCoreTriangle(String node){
         for(String first : communityCore){
             for(String second : communityCore){
@@ -314,12 +268,14 @@ public class Community {
         }
         return false;
     }
+    */
 
-    /**
+    /*
      * Try to see if there is a triangle of online users in this egonetwork
      * @return true if the community is formed, the owner of the object becomes a moderator and needs to do all the stuff related to the fact that he is now a moderator
      */
-    public boolean tryFormCommunity(Map<String, Double> status){//ELEZIONE MODERATORE TODO: status contiene solo gli utenti online, quindi dovrebbe essere migliore da scorrere
+    /*
+    public boolean tryFormCommunity(Map<String, Double> status){//ELEZIONE MODERATORE
         for(String f1 : graph.get(moderator)){
             if(f1.compareTo(egoSocialId)==0) continue;
             if(!status.keySet().contains(f1)) continue;
@@ -373,13 +329,13 @@ public class Community {
             DisTilesProtocol.sendTilesMessage(unmembership);
         }
     }
+*/
 
-
-    /**
+    /*
      * Emergency eject, sent this Tiles object to the secondary moderator. He has to update the community too!
      */
+    /*
     public void emergencyEject() { //ELEZIONE MODERATORE
-//		TODO:se la comunità è piccola forse va cancellata subito
         // Rimuovo il i dati relativi al fattore di carico del moderatore che sta abbandonando.
         communityMembersLoadingFactors.remove(moderator);
 
@@ -400,5 +356,6 @@ public class Community {
         prevCore.addAll(communityCore);
         previousId=getCommunityId();
     }
+     */
 
 }
