@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
@@ -23,8 +24,7 @@ public class Community {
     private Set<Node> communityCore;
 //    shards created from an alter leave
     private List<Set<Node>> shards;
-
-    // threshold for a node to join the community (used only in the cut strats). La soglia deve essere SUPERATA (>, senza uguale) per essere dentro!
+    // threshold for a node to join the community (used only in the cut strats).
     private static final int THRESHOLD=2;
 
     /**
@@ -50,12 +50,26 @@ public class Community {
         communityCore=initialCore;
     }
 
+    /**
+     * method to get a unique id for the community
+     * @return the result of the call {@link Object#hashCode()}
+     */
     public int getCommunityId(){
         return hashCode();
     }
+
+    /**
+     * returns an unmodifiable view of the nodes in the community. Do not attempt to modify the returned data structure because it will raise exceptions
+     * @return a set containing the nodes in the community
+     */
     public Set<Node> getCore(){
         return Collections.unmodifiableSet(communityCore);
     }
+
+    /**
+     * method to create a human-readable representation of the nodes in the community, based on the values returned by {@link Node#getId()}
+     * @return the string to be printed
+     */
     public String prettyPrint(){
         StringBuilder stringBuilder=new StringBuilder();
         stringBuilder.append("Community id: ");
@@ -71,6 +85,11 @@ public class Community {
         return stringBuilder.toString();
     }
 
+    /**
+     * checks if the given node can be added to the community
+     * @param alterNode the node to be checked
+     * @return true if the node
+     */
     private boolean checkJoinConditions(Node alterNode) {
 //      if the alter does not even belong to the context, return
         if(!context.getNodes().contains(alterNode)) return  false;
@@ -106,7 +125,12 @@ public class Community {
         return false;
     }
 
-    public boolean alterJoin(Node alterNode, double loadFactor){
+    /**
+     * tries to add the alter to this community
+     * @param alterNode the alter node to be added
+     * @return true if the node is passing the join conditions (it may be the case that the node was already in)
+     */
+    boolean alterJoin(Node alterNode){
         if(checkJoinConditions(alterNode)) {
             communityCore.add(alterNode);
             return true;
@@ -130,7 +154,6 @@ public class Community {
         if(communityCore.size()<3){
             return true;
         }
-
 
 //		  local strategy: remove and readd each neighbour of the leaving node
         Set<Node> neighbours = new HashSet<> ();
@@ -253,63 +276,54 @@ public class Community {
         return visited;
     }
 
-    /*
-    private boolean closeCoreTriangle(String node){
-        for(String first : communityCore){
-            for(String second : communityCore){
-                if(graph.get(first).contains(second)){
-                    if(graph.get(second).contains(node)){
-                        if(graph.get(node).contains(first)){
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-    */
-
-    /*
-     * Try to see if there is a triangle of online users in this egonetwork
-     * @return true if the community is formed, the owner of the object becomes a moderator and needs to do all the stuff related to the fact that he is now a moderator
+    /**
+     * Try to form a new community
+     * @param status a map with the known status of the users (online vs offline)
+     * @param seed the node around which the community should be created, it is a community-less alter of the ego
+     * @return true if the community is formed, false otherwise
      */
-    /*
-    public boolean tryFormCommunity(Map<String, Double> status){//ELEZIONE MODERATORE
-        for(String f1 : graph.get(moderator)){
-            if(f1.compareTo(egoSocialId)==0) continue;
-            if(!status.keySet().contains(f1)) continue;
-            if(!graph.get(egoSocialId).contains(f1)) return false;
-            for(String f2 : graph.get(moderator)){
-                if(f2.compareTo(egoSocialId)==0) continue;
-                if(!status.keySet().contains(f2)) continue;
-                //and they are both in the egonetwork of the ego
-                if(!graph.get(egoSocialId).contains(f2)) return false;
-                //if we take a couple of friends of the moderator
-                if(graph.get(f1).contains(f2)){
-                    //which close a triangle
-                    //and they are both online
-                    // a new community is formed
-                    // add the triangle to the core
-                    communityCore.add(moderator);
-                    communityCore.add(f1);
-                    communityCore.add(f2);
-                    // complete the core by trying to close triangles
-                    for(String s : status.keySet()){
-                        if(s.compareTo(egoSocialId)==0) continue;
-                        //also skip it if he does not belong to this egonetwork
-                        if(!graph.get(egoSocialId).contains(s)){
-                            continue;
-                        }
-                        //try to close a triangle
-                        if(closeCoreTriangle(s)){
-                            communityCore.add(s);
+    boolean tryFormCommunity(Map<Node, Boolean> status, Node seed){
+
+//        find the online neighbours of the seed
+        Set<Node> seedNeighbours = new HashSet<> ();
+        Iterator<Edge> inedges=context.getInEdges(seed).iterator();
+        while(inedges.hasNext()){
+            Node neighbour=inedges.next().getSrc();
+            if(status.get(neighbour)) seedNeighbours.add(neighbour);
+        }
+        Iterator<Edge> outedges=context.getOutEdges(seed).iterator();
+        while(outedges.hasNext()){
+            Node neighbour=outedges.next().getDst();
+            if(status.get(neighbour)) seedNeighbours.add(neighbour);
+        }
+
+//        scan the neighbours of the online neighbours and find one that closes a triangle
+        for(Node neighbour:seedNeighbours){
+            Iterator<Edge> closingEdgeIterator=context.getOutEdges(neighbour).iterator();
+            while(closingEdgeIterator.hasNext()){
+                Node closingNode=closingEdgeIterator.next().getDst();
+                if(seedNeighbours.contains(closingNode)){
+//                    found
+                    communityCore.add(seed);
+                    communityCore.add(neighbour);
+                    communityCore.add(closingNode);
+//                    try to add other nodes to the community until can't add any more
+                    boolean changed=true;
+                    while(changed) {
+                        changed=false;
+//                        for each node in the same context
+                        for(Node candidate:context.getNodes()){
+//                            check online status and if node is already inside
+                            if(communityCore.contains(candidate)) continue;
+                            if(status.get(candidate)) continue;
+//                            check if the join conditions hold
+                            if(checkJoinConditions(candidate)) {
+                                communityCore.add(candidate);
+                                changed=true;
+                            }
                         }
                     }
-                    communityMembersLoadingFactors=status;
-                    // elect a secondary moderator
-                    secondaryModerator=selectSecondaryModerator();
-                    CommunitiesObserver.births++;
+//                    exit the community creation process
                     return true;
                 }
             }
@@ -317,6 +331,7 @@ public class Community {
         return false;
     }
 
+    /*
     public void sendUnmemberships(){
         //send unmemberships
         TilesMessage unmembership=new TilesMessage(Type.END_COM, moderator);
@@ -329,33 +344,6 @@ public class Community {
             DisTilesProtocol.sendTilesMessage(unmembership);
         }
     }
-*/
-
-    /*
-     * Emergency eject, sent this Tiles object to the secondary moderator. He has to update the community too!
-     */
-    /*
-    public void emergencyEject() { //ELEZIONE MODERATORE
-        // Rimuovo il i dati relativi al fattore di carico del moderatore che sta abbandonando.
-        communityMembersLoadingFactors.remove(moderator);
-
-//		to elect a new primary moderator, temporarily remove the old one from the community core
-        communityCore.remove(moderator);
-//		select the new primary moderator
-        String newPrimaryModerator = selectPrimaryModerator(communityCore);
-        communityCore.add(moderator);
-
-        TilesMessage kapew=new TilesMessage(Type.GNT_PRI_MOD, moderator, newPrimaryModerator);
-        GenericTilesBody body=kapew.new GenericTilesBody(egoSocialId, getCommunityId(), this);
-        kapew.body=body;
-        DisTilesProtocol.sendTilesMessage(kapew);
-    }
-
-    public void nextSlot(){
-        prevCore.clear();
-        prevCore.addAll(communityCore);
-        previousId=getCommunityId();
-    }
-     */
+    */
 
 }
