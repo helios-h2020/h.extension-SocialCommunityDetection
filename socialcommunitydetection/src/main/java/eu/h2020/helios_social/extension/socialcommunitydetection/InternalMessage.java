@@ -44,10 +44,10 @@ class InternalMessage {
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         try {
             outstream.write(t.toString().getBytes(StandardCharsets.UTF_8));
-            outstream.write("ciao".getBytes(StandardCharsets.UTF_8));
-            byte[] payload=outstream.toByteArray();
+            outstream.write(p.getBytes(StandardCharsets.UTF_8));
+            byte[] message=outstream.toByteArray();
             outstream.close();
-            return payload;
+            return message;
         } catch (IOException e){
             return null;
         }

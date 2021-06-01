@@ -3,7 +3,6 @@ package eu.h2020.helios_social.extension.socialcommunitydetection;
 import androidx.annotation.NonNull;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -12,6 +11,7 @@ import eu.h2020.helios_social.core.contextualegonetwork.Context;
 import eu.h2020.helios_social.core.contextualegonetwork.ContextualEgoNetwork;
 import eu.h2020.helios_social.core.contextualegonetwork.Node;
 import eu.h2020.helios_social.core.messaging.ReliableHeliosMessagingNodejsLibp2pImpl;
+import eu.h2020.helios_social.core.messaging_nodejslibp2p.HeliosNetworkAddress;
 
 public class SocialCommunityDetection {
 
@@ -24,7 +24,7 @@ public class SocialCommunityDetection {
     /**
      * A representation of the community structure
      */
-    Map<Context, List<HashSet<Node>>> communities=null;
+    Map<Context, List<Community>> communities=null;
 
     /**
      * A reference to the CENListener
@@ -40,6 +40,12 @@ public class SocialCommunityDetection {
      * A reference to the messagingModule
      */
     ReliableHeliosMessagingNodejsLibp2pImpl messagingModule=null;
+
+    /**
+     * A map that keeps track of the status (online/offline) of the users
+     * It is initialized lazily, and populated as alters appear online
+     */
+    Map<Node, Boolean> status=null;
 
     /**
      * Call this method to start the module. It is suggested not to call this method from a UI thread.
@@ -74,10 +80,18 @@ public class SocialCommunityDetection {
 
     /**
      * Stops this instance of the module if it was running. Stopping the module will dispose all internal data structures: do not attempt to call getCommunities() after stopping the module.
-     * @return true if the module was successfully stopped
+     * @return true if the module was successfully/gracefully stopped
      */
     public synchronized boolean stopModule(){
         running=false;
+
+//      send offl messages (notification of offline transition)
+        byte[] pingMessage=InternalMessage.createMessage(InternalMessage.Type.OFFL, contextualEgoNetwork.getEgo().getId());
+        for(Node alter:contextualEgoNetwork.getAlters()) {
+            HeliosNetworkAddress address = new HeliosNetworkAddress();
+            address.setNetworkId(alter.getId());
+            messagingModule.sendTo(address, SocialCommunityDetection.PROTOCOL_NAME, pingMessage);
+        }
 
 //      callback detachment
         cenListener.setIdleCENListener(); // cannot detach =(, so make it idle!
@@ -86,6 +100,8 @@ public class SocialCommunityDetection {
 //      data structures cleanup
         communities.clear();
         contextualEgoNetwork=null;
+        status.clear();
+
         return true;
     }
 
@@ -94,7 +110,7 @@ public class SocialCommunityDetection {
      * Only works if the module is running.
      * @return the community structure. In case there is no community structure or the module is not running, returns null
      */
-    public synchronized List<HashSet<Node>> getCommunities(@NonNull Context context){
+    public synchronized List<Community> getCommunities(@NonNull Context context){
         if (!running) return null;
         try {
             if (Objects.requireNonNull(communities.get(context)).size()==0) return null;

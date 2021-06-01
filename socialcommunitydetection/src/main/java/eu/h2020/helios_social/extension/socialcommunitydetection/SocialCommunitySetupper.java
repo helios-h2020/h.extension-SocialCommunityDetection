@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import eu.h2020.helios_social.core.contextualegonetwork.Context;
 import eu.h2020.helios_social.core.contextualegonetwork.ContextualEgoNetwork;
@@ -39,9 +40,11 @@ class SocialCommunitySetupper extends Thread{
         for(Context context : module.contextualEgoNetwork.getContexts()) {
             module.communities.put(context, new LinkedList<>());
         }
+//        "lazy" initialization of the status map, it is going to be populated as alters appear online
+        module.status=new ConcurrentHashMap<>();
 
 //      set up messaging callbacks
-        HeliosMessagingReceiver receiver=new SocialCommunityMessageReceiver();
+        HeliosMessagingReceiver receiver=new SocialCommunityMessageReceiver(module);
         module.messagingModule.addReceiver(SocialCommunityDetection.PROTOCOL_NAME, receiver);
 
 //      create the cen listener and attach it to the cen if necessary, then activate it

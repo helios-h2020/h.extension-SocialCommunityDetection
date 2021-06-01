@@ -92,7 +92,7 @@ public class Community {
      */
     private boolean checkJoinConditions(Node alterNode) {
 //      if the alter does not even belong to the context, return
-        if(!context.getNodes().contains(alterNode)) return  false;
+        if(!context.getNodes().contains(alterNode)) return false;
 //      cut strategy
 //      count the amount of edges going inside the community this node has
         int count=0;
