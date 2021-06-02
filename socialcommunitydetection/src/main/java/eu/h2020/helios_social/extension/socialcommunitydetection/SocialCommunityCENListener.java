@@ -8,12 +8,15 @@ import eu.h2020.helios_social.core.contextualegonetwork.Node;
 
 class SocialCommunityCENListener implements ContextualEgoNetworkListener {
 
-    private final ContextualEgoNetworkListener activeCENListener=new ActiveCENListener();
-    private final ContextualEgoNetworkListener idleCENListener=new IdleCENListener();
-    private ContextualEgoNetworkListener listener=idleCENListener;
+    private final ContextualEgoNetworkListener activeCENListener;
+    private final ContextualEgoNetworkListener idleCENListener;
+    private ContextualEgoNetworkListener listener;
 
-
-    public SocialCommunityCENListener(){ }
+    public SocialCommunityCENListener(SocialCommunityDetection module){
+        activeCENListener=new ActiveCENListener(module);
+        idleCENListener=new IdleCENListener();
+        listener=idleCENListener;
+    }
 
     /**
      * Activate the listener

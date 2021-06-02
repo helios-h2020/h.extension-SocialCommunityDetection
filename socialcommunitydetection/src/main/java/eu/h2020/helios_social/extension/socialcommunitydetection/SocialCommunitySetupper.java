@@ -49,7 +49,7 @@ class SocialCommunitySetupper extends Thread{
 
 //      create the cen listener and attach it to the cen if necessary, then activate it
         if(module.cenListener==null){
-            module.cenListener=new SocialCommunityCENListener();
+            module.cenListener=new SocialCommunityCENListener(module);
             module.contextualEgoNetwork.addListener(module.cenListener);
         }
         module.cenListener.setActiveCENListener();
@@ -57,6 +57,7 @@ class SocialCommunitySetupper extends Thread{
 
 //      send ping messages
         byte[] pingMessage=InternalMessage.createMessage(InternalMessage.Type.PING, module.contextualEgoNetwork.getEgo().getId());
+        if (pingMessage==null) return;
         for(Node alter:module.contextualEgoNetwork.getAlters()) {
             HeliosNetworkAddress address = new HeliosNetworkAddress();
             address.setNetworkId(alter.getId());
