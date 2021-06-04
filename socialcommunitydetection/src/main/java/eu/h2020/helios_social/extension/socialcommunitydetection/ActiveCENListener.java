@@ -30,9 +30,9 @@ class ActiveCENListener implements ContextualEgoNetworkListener {
 
 //    ignored for now, but will consider if we should limit the community computation only to active contexts
     @Override
-    public void onLoadContext(Context context) {}
+    public void onLoadContext(Context context) { }
     @Override
-    public void onSaveContext(Context context) {}
+    public void onSaveContext(Context context) { }
 
 //    remove the context from the communities structure
     @Override
@@ -59,9 +59,7 @@ class ActiveCENListener implements ContextualEgoNetworkListener {
             for (Community community : Objects.requireNonNull(module.communities.get(context))) {
                 community.alterLeave(node);
             }
-        } catch (NullPointerException e){
-//            ignore exception and exit
-        }
+        } catch (NullPointerException ignore){ }
     }
 
 //    start the joining procedure with the ping messages
@@ -94,16 +92,14 @@ class ActiveCENListener implements ContextualEgoNetworkListener {
                 for (Community community : Objects.requireNonNull(module.communities.get(context))) {
                     community.alterLeave(edge.getSrc());
                 }
-            } catch (NullPointerException ignored){}
-//            ignore the exception and do nothing
+            } catch (NullPointerException ignore){}
         }
         if (edge.getDst()!=edge.getEgo()){
             try{
                 for (Community community : Objects.requireNonNull(module.communities.get(context))){
                     community.alterLeave(edge.getDst());
                 }
-            } catch (NullPointerException ignored){}
-//            ignore the exception and do nothing
+            } catch (NullPointerException ignore){ }
         }
     }
 

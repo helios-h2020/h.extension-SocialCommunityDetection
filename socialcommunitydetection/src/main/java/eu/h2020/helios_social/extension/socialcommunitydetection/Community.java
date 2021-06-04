@@ -289,12 +289,12 @@ public class Community {
         Iterator<Edge> inedges=context.getInEdges(seed).iterator();
         while(inedges.hasNext()){
             Node neighbour=inedges.next().getSrc();
-            if(status.get(neighbour)) seedNeighbours.add(neighbour);
+            if(status.getOrDefault(neighbour, Boolean.FALSE)) seedNeighbours.add(neighbour);
         }
         Iterator<Edge> outedges=context.getOutEdges(seed).iterator();
         while(outedges.hasNext()){
             Node neighbour=outedges.next().getDst();
-            if(status.get(neighbour)) seedNeighbours.add(neighbour);
+            if(status.getOrDefault(neighbour, Boolean.FALSE)) seedNeighbours.add(neighbour);
         }
 
 //        scan the neighbours of the online neighbours and find one that closes a triangle
