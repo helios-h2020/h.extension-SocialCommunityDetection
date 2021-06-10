@@ -1,7 +1,10 @@
 package eu.h2020.helios_social.extension.socialcommunitydetection;
 
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Objects;
+import java.util.Set;
 
 import eu.h2020.helios_social.core.contextualegonetwork.Context;
 import eu.h2020.helios_social.core.contextualegonetwork.ContextualEgoNetworkListener;
@@ -56,8 +59,20 @@ class ActiveCENListener implements ContextualEgoNetworkListener {
     public void onRemoveNode(Context context, Node node) {
         if (!module.communities.containsKey(context)) return;
         try {
+            Set<Set<Node>> shards= new HashSet<>();
             for (Community community : Objects.requireNonNull(module.communities.get(context))) {
                 community.alterLeave(node);
+                if (community.wasSplit()){
+                    Iterator<Set<Node>> iterator=community.getShards();
+                    while(iterator.hasNext()){
+                        shards.add(iterator.next());
+                        iterator.remove();
+                    }
+                }
+            }
+            for(Set<Node> shard : shards){
+                Community newcom=new Community(module.contextualEgoNetwork, context, shard);
+                Objects.requireNonNull(module.communities.get(context)).add(newcom);
             }
         } catch (NullPointerException ignore){ }
     }
@@ -89,15 +104,39 @@ class ActiveCENListener implements ContextualEgoNetworkListener {
         Context context=edge.getContext();
         if (edge.getSrc()!=edge.getEgo()) {
             try {
+                Set<Set<Node>> shards= new HashSet<>();
                 for (Community community : Objects.requireNonNull(module.communities.get(context))) {
                     community.alterLeave(edge.getSrc());
+                    if (community.wasSplit()){
+                        Iterator<Set<Node>> iterator=community.getShards();
+                        while(iterator.hasNext()){
+                            shards.add(iterator.next());
+                            iterator.remove();
+                        }
+                    }
+                }
+                for(Set<Node> shard : shards){
+                    Community newcom=new Community(module.contextualEgoNetwork, context, shard);
+                    Objects.requireNonNull(module.communities.get(context)).add(newcom);
                 }
             } catch (NullPointerException ignore){}
         }
         if (edge.getDst()!=edge.getEgo()){
             try{
+                Set<Set<Node>> shards= new HashSet<>();
                 for (Community community : Objects.requireNonNull(module.communities.get(context))){
                     community.alterLeave(edge.getDst());
+                    if (community.wasSplit()){
+                        Iterator<Set<Node>> iterator=community.getShards();
+                        while(iterator.hasNext()){
+                            shards.add(iterator.next());
+                            iterator.remove();
+                        }
+                    }
+                }
+                for(Set<Node> shard : shards){
+                    Community newcom=new Community(module.contextualEgoNetwork, context, shard);
+                    Objects.requireNonNull(module.communities.get(context)).add(newcom);
                 }
             } catch (NullPointerException ignore){ }
         }

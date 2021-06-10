@@ -5,7 +5,10 @@ import androidx.annotation.NonNull;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
+import java.util.Set;
 
 import eu.h2020.helios_social.core.contextualegonetwork.Context;
 import eu.h2020.helios_social.core.contextualegonetwork.Node;
@@ -93,7 +96,7 @@ class SocialCommunityMessageReceiver implements HeliosMessagingReceiver {
                             Community newCommunity=new Community(module.contextualEgoNetwork, context);
                             if(newCommunity.tryFormCommunity(module.status, sender)){
 //                                if the community was formed
-                                module.communities.get(context).add(newCommunity);
+                                Objects.requireNonNull(module.communities.get(context)).add(newCommunity);
                             }
                         }
 //                        reset control variable
@@ -110,8 +113,20 @@ class SocialCommunityMessageReceiver implements HeliosMessagingReceiver {
 //                update communities
                 for(Context context:module.contextualEgoNetwork.getContexts()){
                     try {
+                        Set<Set<Node>> shards= new HashSet<>();
                         for (Community community : Objects.requireNonNull(module.communities.get(context))) {
                             community.alterLeave(sender);
+                            if (community.wasSplit()){
+                                Iterator<Set<Node>> iterator=community.getShards();
+                                while(iterator.hasNext()){
+                                    shards.add(iterator.next());
+                                    iterator.remove();
+                                }
+                            }
+                        }
+                        for(Set<Node> shard : shards){
+                            Community newcom=new Community(module.contextualEgoNetwork, context, shard);
+                            Objects.requireNonNull(module.communities.get(context)).add(newcom);
                         }
                     } catch (NullPointerException ignore) { }
                 }
