@@ -90,7 +90,7 @@ public class Community {
      * @param alterNode the node to be checked
      * @return true if the node
      */
-    private boolean checkJoinConditions(Node alterNode) {
+    private synchronized boolean checkJoinConditions(Node alterNode) {
 //      if the alter does not even belong to the context, return
         if(!context.getNodes().contains(alterNode)) return false;
 //      cut strategy
@@ -143,7 +143,7 @@ public class Community {
      * @param alterNode the {@link Node} object to be removed from the community
      * @return true if the community must be destroyed, false otherwise
      */
-    boolean alterLeave(Node alterNode){
+    synchronized boolean alterLeave(Node alterNode){
 
 //        check that there is still a structure
 //        if the alter is not part of this ego network, do nothing and return
@@ -237,7 +237,7 @@ public class Community {
      * get an iterator of the shards that have to be managed
      * @return the iterator
      */
-    Iterator<Set<Node>> getShards(){
+    synchronized Iterator<Set<Node>> getShards(){
         return shards.iterator();
     }
 
@@ -331,19 +331,5 @@ public class Community {
         return false;
     }
 
-    /*
-    public void sendUnmemberships(){
-        //send unmemberships
-        TilesMessage unmembership=new TilesMessage(Type.END_COM, moderator);
-        GenericTilesBody body=unmembership.new GenericTilesBody(egoSocialId, getCommunityId(), null);
-        for(String node : communityCore){
-            if(node.compareTo(moderator)==0) continue;
-            unmembership=new TilesMessage(Type.END_COM, moderator);
-            unmembership.body=body;
-            unmembership.recipient=node;
-            DisTilesProtocol.sendTilesMessage(unmembership);
-        }
-    }
-    */
 
 }

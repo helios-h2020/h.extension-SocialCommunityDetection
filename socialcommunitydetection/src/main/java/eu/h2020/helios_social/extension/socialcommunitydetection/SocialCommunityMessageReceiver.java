@@ -117,10 +117,12 @@ class SocialCommunityMessageReceiver implements HeliosMessagingReceiver {
                         for (Community community : Objects.requireNonNull(module.communities.get(context))) {
                             community.alterLeave(sender);
                             if (community.wasSplit()){
-                                Iterator<Set<Node>> iterator=community.getShards();
-                                while(iterator.hasNext()){
-                                    shards.add(iterator.next());
-                                    iterator.remove();
+                                synchronized (module) {
+                                    Iterator<Set<Node>> iterator=community.getShards();
+                                    while(iterator.hasNext()) {
+                                        shards.add(iterator.next());
+                                        iterator.remove();
+                                    }
                                 }
                             }
                         }

@@ -1,6 +1,5 @@
 package eu.h2020.helios_social.extension.socialcommunitydetection;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,7 +30,7 @@ class SocialCommunitySetupper extends Thread{
     public void run() {
 
 //      set up data structures
-        module.communities=new HashMap<>();
+        module.communities=new ConcurrentHashMap<>();
         for(Context context : module.contextualEgoNetwork.getContexts()) {
             module.communities.put(context, new LinkedList<>());
         }
