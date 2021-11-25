@@ -5,6 +5,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * This class model a message used by the protocol
+ *
+ *  @author Andrea Michienzi (andrea.michienzi@di.unipi.it)
+ *  @author Barbara Guidi (guidi@di.unipi.it)
+ *  @author Laura Ricci (laura.ricci@unipi.it)
+ *  @author Fabrizio Baiardi (f.baiardi@unipi.it)
+ */
 class InternalMessage {
 
     /**

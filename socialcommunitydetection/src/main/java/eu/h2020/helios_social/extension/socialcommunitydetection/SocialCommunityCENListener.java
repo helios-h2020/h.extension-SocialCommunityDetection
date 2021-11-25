@@ -6,6 +6,14 @@ import eu.h2020.helios_social.core.contextualegonetwork.Edge;
 import eu.h2020.helios_social.core.contextualegonetwork.Interaction;
 import eu.h2020.helios_social.core.contextualegonetwork.Node;
 
+/**
+ * This class acts as a wrapper for the CEN listener, changing its behaviour according to the status of the module (idle when the module is not working, active when the module is working)
+ *
+ *  @author Andrea Michienzi (andrea.michienzi@di.unipi.it)
+ *  @author Barbara Guidi (guidi@di.unipi.it)
+ *  @author Laura Ricci (laura.ricci@unipi.it)
+ *  @author Fabrizio Baiardi (f.baiardi@unipi.it)
+ */
 class SocialCommunityCENListener implements ContextualEgoNetworkListener {
 
     private final ContextualEgoNetworkListener activeCENListener;

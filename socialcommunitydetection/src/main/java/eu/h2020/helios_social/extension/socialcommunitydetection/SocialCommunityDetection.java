@@ -13,6 +13,14 @@ import eu.h2020.helios_social.core.contextualegonetwork.Node;
 import eu.h2020.helios_social.core.messaging.ReliableHeliosMessagingNodejsLibp2pImpl;
 import eu.h2020.helios_social.core.messaging_nodejslibp2p.HeliosNetworkAddress;
 
+/**
+ * This is the class used to manage the community detection module. Contains methods to start and stop the module, and methods to get the current community structure.
+ *
+ *  @author Andrea Michienzi (andrea.michienzi@di.unipi.it)
+ *  @author Barbara Guidi (guidi@di.unipi.it)
+ *  @author Laura Ricci (laura.ricci@unipi.it)
+ *  @author Fabrizio Baiardi (f.baiardi@unipi.it)
+ */
 public class SocialCommunityDetection {
 
     public static final String PROTOCOL_NAME = "/protocol/social_community_detection";
@@ -108,6 +116,7 @@ public class SocialCommunityDetection {
     /**
      * Call this method to return the current community structure in the requested context.
      * Only works if the module is running.
+     * @param context The context of which the community structure should be returned. This parameter cannot be null.
      * @return the community structure. In case there is no community structure or the module is not running, returns null
      */
     public synchronized List<Community> getCommunities(@NonNull Context context){

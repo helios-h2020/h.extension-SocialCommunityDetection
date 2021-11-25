@@ -8,6 +8,14 @@ import eu.h2020.helios_social.core.contextualegonetwork.Node;
 import eu.h2020.helios_social.core.messaging_nodejslibp2p.HeliosMessagingReceiver;
 import eu.h2020.helios_social.core.messaging_nodejslibp2p.HeliosNetworkAddress;
 
+/**
+ * Support class used to start the social community detection module.
+ *
+ *  @author Andrea Michienzi (andrea.michienzi@di.unipi.it)
+ *  @author Barbara Guidi (guidi@di.unipi.it)
+ *  @author Laura Ricci (laura.ricci@unipi.it)
+ *  @author Fabrizio Baiardi (f.baiardi@unipi.it)
+ */
 class SocialCommunitySetupper extends Thread{
 
     /**
@@ -18,6 +26,7 @@ class SocialCommunitySetupper extends Thread{
 
     /**
      * Build the setupper thread
+     * @param scd a reference to the social community detection module
      */
     SocialCommunitySetupper(SocialCommunityDetection scd){
         module=scd;

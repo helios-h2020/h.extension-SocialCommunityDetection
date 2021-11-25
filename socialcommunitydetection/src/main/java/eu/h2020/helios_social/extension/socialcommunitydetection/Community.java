@@ -14,6 +14,14 @@ import eu.h2020.helios_social.core.contextualegonetwork.ContextualEgoNetwork;
 import eu.h2020.helios_social.core.contextualegonetwork.Edge;
 import eu.h2020.helios_social.core.contextualegonetwork.Node;
 
+/**
+ * This class represents a community
+ *
+ *  @author Andrea Michienzi (andrea.michienzi@di.unipi.it)
+ *  @author Barbara Guidi (guidi@di.unipi.it)
+ *  @author Laura Ricci (laura.ricci@unipi.it)
+ *  @author Fabrizio Baiardi (f.baiardi@unipi.it)
+ */
 public class Community {
 
     // reference to the cen

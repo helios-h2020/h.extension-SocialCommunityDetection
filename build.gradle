@@ -13,6 +13,10 @@ buildscript {
     }
 }
 
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def heliosUser = properties.getProperty('heliosUser')
+def heliosPassword = properties.getProperty('heliosPassword')
 allprojects {
     repositories {
         google()

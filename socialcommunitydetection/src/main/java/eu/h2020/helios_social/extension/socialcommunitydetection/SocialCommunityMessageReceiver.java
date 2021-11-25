@@ -16,7 +16,12 @@ import eu.h2020.helios_social.core.messaging_nodejslibp2p.HeliosMessagingReceive
 import eu.h2020.helios_social.core.messaging_nodejslibp2p.HeliosNetworkAddress;
 
 /**
- * Implementation of the {@link HeliosMessagingReceiver} for the Social Community Detection module
+ * Implementation of the {@link HeliosMessagingReceiver} for the Social Community Detection module. Messages are managed here.
+ *
+ *  @author Andrea Michienzi (andrea.michienzi@di.unipi.it)
+ *  @author Barbara Guidi (guidi@di.unipi.it)
+ *  @author Laura Ricci (laura.ricci@unipi.it)
+ *  @author Fabrizio Baiardi (f.baiardi@unipi.it)
  */
 class SocialCommunityMessageReceiver implements HeliosMessagingReceiver {
 
@@ -27,6 +32,7 @@ class SocialCommunityMessageReceiver implements HeliosMessagingReceiver {
 
     /**
      * Constructor to pass references to relevant data structures
+     * @param m * @param scd a reference to the social community detection module
      */
     SocialCommunityMessageReceiver(SocialCommunityDetection m){
         module=m;

@@ -13,6 +13,14 @@ import eu.h2020.helios_social.core.contextualegonetwork.Interaction;
 import eu.h2020.helios_social.core.contextualegonetwork.Node;
 import eu.h2020.helios_social.core.messaging_nodejslibp2p.HeliosNetworkAddress;
 
+/**
+ * This class is used to make the CEN listener active. It is used when the module should be working,
+ *
+ *  @author Andrea Michienzi (andrea.michienzi@di.unipi.it)
+ *  @author Barbara Guidi (guidi@di.unipi.it)
+ *  @author Laura Ricci (laura.ricci@unipi.it)
+ *  @author Fabrizio Baiardi (f.baiardi@unipi.it)
+ */
 class ActiveCENListener implements ContextualEgoNetworkListener {
 
     SocialCommunityDetection module;

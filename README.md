@@ -24,7 +24,7 @@ The module is not (yet!) available through Nexus, therefore an aar is provided a
 
 
 ## How to use the module ##
-To start the SCD module, instantiate a `TrustManager` object and then call the `startModule()` method. This method requires an already instantiated Contextual Ego Network to detect the community structure and a running ReliableHeliosMessagingNodejsLibp2pImpl for exchanging messages with other alters. The method returns true if the module was started correctly, or false is the parameters were found not valid.
+To start the SCD module, instantiate a `SocialCommunityDetection` object and then call the `startModule()` method. This method requires an already instantiated Contextual Ego Network to detect the community structure and a running ReliableHeliosMessagingNodejsLibp2pImpl for exchanging messages with other alters. The method returns true if the module was started correctly, or false is the parameters were found not valid.
 
 To stop the module, simply call the `stopModule()` method. Data structures will be freed, and the module will stop sending messages to alters or reacting to CEN changes. The module supports object reusage, so an instance of the SCD module can be restarted by calling `startModule()` again. To check whether the module is running, use the utility method `isStarted()`. Although possible, it is strongly advised to *not* run multiple instances of this module on a single device.
 
@@ -35,3 +35,4 @@ A Community object can be inspected through several methods. The method `getComm
 ## Project Structure ##
 This project is structured as follows:
 - The *src* directory contains the source code files.
+- The *doc* directory contains the Javadoc.
